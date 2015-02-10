@@ -1,5 +1,5 @@
 {
-  "name": "sbx/zf2-access-control",
+  "name": "sbx-zf2/AccessControl",
   "description": "RBAC Db Based ACL for zf2",
   "type": "library",
   "license": "BSD-3-Clause",
