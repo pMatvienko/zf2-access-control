@@ -1,0 +1,32 @@
+{
+  "name": "sbx/zf2-access-control",
+  "description": "RBAC Db Based ACL for zf2",
+  "type": "library",
+  "license": "BSD-3-Clause",
+  "keywords": [
+    "database",
+    "acl",
+    "rbac",
+    "zf2"
+  ],
+  "homepage": "https://github.com/pMatvienko/zf2-access-control",
+  "authors": [
+    {
+      "name": "Pavel Matviienko",
+      "email": "shturman.p@gmail.com",
+      "homepage": "http://pavels.in.ua"
+    }
+  ],
+  "require": {
+    "php": ">=5.3.3",
+    "zendframework/zendframework": "2.*"
+  },
+  "autoload": {
+    "psr-0": {
+      "AccessControl": "src/"
+    },
+    "classmap": [
+      "./Module.php"
+    ]
+  }
+}
