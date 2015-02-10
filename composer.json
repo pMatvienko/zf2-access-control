@@ -1,5 +1,5 @@
 {
-  "name": "sbx-zf2/AccessControl",
+  "name": "sbx-zf2/access-control",
   "description": "RBAC Db Based ACL for zf2",
   "type": "library",
   "license": "BSD-3-Clause",
@@ -23,10 +23,10 @@
   },
   "autoload": {
     "psr-0": {
-      "AccessControl": "src/"
+      "AccessControl": "./AccessControl/src/"
     },
     "classmap": [
-      "./Module.php"
+      "./AccessControl/Module.php"
     ]
   }
 }
