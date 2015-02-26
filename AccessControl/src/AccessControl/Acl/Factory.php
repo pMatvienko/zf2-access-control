@@ -2,17 +2,27 @@
 
 namespace AccessControl\Acl;
 
+use AccessControl\Entity\AclResource as AclResourceEntity;
+use AccessControl\Entity\AclRole as AclRoleEntity;
 use AccessControl\Mvc\Checker;
-use Zend\Memory\Container\AccessController;
 use Zend\ServiceManager\FactoryInterface;
 use Zend\ServiceManager\ServiceLocatorAwareInterface;
 use Zend\ServiceManager\ServiceLocatorAwareTrait;
 use Zend\ServiceManager\ServiceLocatorInterface;
 
+/**
+ * Class Factory
+ *
+ * @package AccessControl\Acl
+ * @author  Pavel Matviienko
+ */
 class Factory implements FactoryInterface, ServiceLocatorAwareInterface
 {
     use ServiceLocatorAwareTrait;
 
+    /**
+     * @var AclResourceEntity[]
+     */
     private $resources = null;
 
     /**
@@ -21,45 +31,55 @@ class Factory implements FactoryInterface, ServiceLocatorAwareInterface
     private $acl;
 
     /**
-     * Create service
+     * Create service.
      *
      * @param ServiceLocatorInterface $sm
      *
-     * @return mixed
+     * @return Acl
      */
     public function createService(ServiceLocatorInterface $sm)
     {
         $this->setServiceLocator($sm);
-        /**
-         * @var \Zend\Cache\Storage\Adapter\Filesystem $cache;
-         */
-        $cache = $sm->get('AccessControl\Acl\Cache');
+        $config = $sm->get('config');
+        if (!empty($config['access_control']['enabled'])) {
+            /**
+             * @var \Zend\Cache\Storage\Adapter\Filesystem $cache ;
+             */
+            $cache = $sm->get('AccessControl\Acl\Cache');
 
-        $rolesCombination = array();
-        foreach($this->getRoles() as $role) {
-            $rolesCombination[] = $role->getCode();
-        }
-        $rolesCombinationString = implode($rolesCombination, Checker::RESOURCE_PARTS_JOIN_BY);
-        if($cache->hasItem($rolesCombinationString)) {
-            $this->acl = $cache->getItem($rolesCombinationString);
+            $rolesCombination = array();
+            foreach ($this->getRoles() as $role) {
+                $rolesCombination[] = $role->getCode();
+            }
+            $rolesCombinationString = implode($rolesCombination, Checker::RESOURCE_PARTS_JOIN_BY);
+            if ($cache->hasItem($rolesCombinationString)) {
+                $this->acl = $cache->getItem($rolesCombinationString);
+            } else {
+                $this->initAcl();
+                $cache->addItem($rolesCombinationString, $this->acl);
+                $cache->setTags($rolesCombinationString, $rolesCombination);
+                $this->acl->setEnabled(true);
+            }
         } else {
-            $this->initAcl();
-            $cache->addItem($rolesCombinationString, $this->acl);
-            $cache->setTags($rolesCombinationString, $rolesCombination);
+            $this->acl = new Acl();
+            $this->acl->setEnabled(false);
         }
-
 
         return $this->acl;
     }
 
+    /**
+     * Initializing Acl.
+     */
     private function initAcl()
     {
         /**
-         * @var \AccessControl\Entity\AclResource[] $resources
+         * @var AclResourceEntity[] $resources
          */
         $resources = $this->getResources();
         $addedRoleCodes = array();
         $this->acl = new Acl();
+
         foreach ($this->getRoles() as $role) {
             $this->initRole($role, $resources);
             $addedRoleCodes[] = $role->getCode();
@@ -77,7 +97,15 @@ class Factory implements FactoryInterface, ServiceLocatorAwareInterface
         }
     }
 
-    private function initRole(\AccessControl\Entity\AclRole $role, &$resources)
+    /**
+     * Initializing Acl Role.
+     *
+     * @param AclRoleEntity       $role      Role Entity Instance.
+     * @param AclResourceEntity[] $resources Resources that not added to acl yet.
+     *
+     * @return Acl
+     */
+    private function initRole(AclRoleEntity $role, &$resources)
     {
         if ($this->acl->hasRole($role->getCode())) {
             return $this->acl;
@@ -91,7 +119,7 @@ class Factory implements FactoryInterface, ServiceLocatorAwareInterface
             $this->acl->addRole($role->getCode());
         }
         /**
-         * @var \AccessControl\Entity\AclResource $allowedResourceAction
+         * @var AclResourceEntity $allowedResourceAction
          */
         foreach ($role->getResource() as $allowedResourceAction) {
             if (array_key_exists($allowedResourceAction->getId(), $resources)) {
@@ -103,7 +131,14 @@ class Factory implements FactoryInterface, ServiceLocatorAwareInterface
         return $this->acl;
     }
 
-    private function allowAccess($role, \AccessControl\Entity\AclResource $resource, &$resources)
+    /**
+     * Allow access to resource $resource and it's children for role $role
+     *
+     * @param string              $role
+     * @param AclResourceEntity   $resource
+     * @param AclResourceEntity[] $resources
+     */
+    private function allowAccess($role, AclResourceEntity $resource, &$resources)
     {
         $resourceCode = $this->getResourceCode($resource);
 
@@ -124,7 +159,14 @@ class Factory implements FactoryInterface, ServiceLocatorAwareInterface
         }
     }
 
-    private function disallowAccess($role, \AccessControl\Entity\AclResource $resource, &$resources)
+    /**
+     * Disallow access to resource $resource and it's children for role $role
+     *
+     * @param string              $role
+     * @param AclResourceEntity   $resource
+     * @param AclResourceEntity[] $resources
+     */
+    private function disallowAccess($role, AclResourceEntity $resource, &$resources)
     {
         $resourceCode = $this->getResourceCode($resource);
 
@@ -146,6 +188,11 @@ class Factory implements FactoryInterface, ServiceLocatorAwareInterface
         }
     }
 
+    /**
+     * Add resource to ACL if it is not added yet.
+     *
+     * @param string $resourceCode
+     */
     private function addResource($resourceCode)
     {
         if (!$this->acl->hasResource($resourceCode)) {
@@ -153,21 +200,40 @@ class Factory implements FactoryInterface, ServiceLocatorAwareInterface
         }
     }
 
-    private function getResourceCode(\AccessControl\Entity\AclResource $resource)
+    /**
+     * Gets resource code from entity instance.
+     *
+     * @param AclResourceEntity $resource
+     *
+     * @return string
+     */
+    private function getResourceCode(AclResourceEntity $resource)
     {
         return $resource->getModule() . Checker::RESOURCE_PARTS_JOIN_BY . $resource->getResource();
     }
 
+    /**
+     * Gets current user roles is set.
+     * This method uses Service manager "AccessControl\Roles" alias. You should set factory for this alias somewhere
+     * in your project, that would return array of current roles to use for acl.
+     *
+     * @return AclRoleEntity[]
+     */
     private function getRoles()
     {
         return $this->getServiceLocator()->get('AccessControl\Roles');
     }
 
+    /**
+     * Gets all resources currently added to acl.
+     *
+     * @return \AccessControl\Entity\AclResource[]
+     */
     private function getResources()
     {
         if ($this->resources == null) {
             /**
-             * @var \AccessControl\Entity\AclResource[] $resources
+             * @var AclResourceEntity[] $resources
              */
             $resources = $this->getServiceLocator()->get('Doctrine\ORM\EntityManager')->getRepository('AccessControl\Entity\AclResource')->findAll();
             foreach ($resources as $res) {

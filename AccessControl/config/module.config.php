@@ -5,6 +5,7 @@ return [
     'service_manager' => [
         'invokables' => [
             'AccessControl\Mvc\Scanner' => 'AccessControl\Mvc\Scanner',
+            'AccessControl/Model/Acl' => 'AccessControl\Model\AclModel',
         ],
         'factories'          => [
             'AccessControl\Acl' => 'AccessControl\Acl\Factory',
@@ -50,8 +51,6 @@ return [
         ]
     ],
     'access_control' => [
-        'mvc_acl' => [
-            'enabled' => true
-        ]
+        'enabled' => false
     ],
 ];

@@ -42,7 +42,7 @@ class Module implements BootstrapListenerInterface, AutoloaderProviderInterface
     {
         $app = $e->getApplication();
         $config = $app->getServiceManager()->get('config');
-        if (!empty($config['access_control']['mvc_acl']['enabled'])) {
+        if (!empty($config['access_control']['enabled'])) {
             $checker = new \AccessControl\Mvc\Checker();
             $app->getEventManager()->getSharedManager()->attach('Zend\Mvc\Controller\AbstractActionController', MvcEvent::EVENT_DISPATCH, array($checker, 'onDispatch'), 100);
         }
