@@ -4,12 +4,14 @@ namespace AccessControl;
 return [
     'service_manager' => [
         'invokables' => [
-            'AccessControl\Mvc\Scanner' => 'AccessControl\Mvc\Scanner',
+            'AccessControl/Mvc/Scanner' => 'AccessControl\Mvc\Scanner',
             'AccessControl/Model/Acl' => 'AccessControl\Model\AclModel',
+            'AccessControl/Entity/Resource' => 'AccessControl\Entity\AclResource',
+            'AccessControl/Entity/Role' => 'AccessControl\Entity\AclRole',
         ],
         'factories'          => [
-            'AccessControl\Acl' => 'AccessControl\Acl\Factory',
-            'AccessControl\Acl\Cache' => function() {
+            'AccessControl/Acl' => 'AccessControl\Acl\Factory',
+            'AccessControl/Acl/Cache' => function() {
                 return \Zend\Cache\StorageFactory::factory(
                     array(
                         'adapter' => array(
@@ -28,7 +30,7 @@ return [
             }
         ],
         'aliases' => array(
-            'acl' => 'AccessControl\Acl',
+            'acl' => 'AccessControl/Acl',
         ),
     ],
     'console'         => [

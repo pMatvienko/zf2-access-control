@@ -4,6 +4,7 @@ namespace AccessControl\Acl;
 
 use AccessControl\Entity\AclResource as AclResourceEntity;
 use AccessControl\Entity\AclRole as AclRoleEntity;
+use AccessControl\Exception;
 use AccessControl\Mvc\Checker;
 use Zend\ServiceManager\FactoryInterface;
 use Zend\ServiceManager\ServiceLocatorAwareInterface;
@@ -36,16 +37,20 @@ class Factory implements FactoryInterface, ServiceLocatorAwareInterface
      * @param ServiceLocatorInterface $sm
      *
      * @return Acl
+     * @throws Exception\CacheNotConfiguredException
      */
     public function createService(ServiceLocatorInterface $sm)
     {
         $this->setServiceLocator($sm);
         $config = $sm->get('config');
         if (!empty($config['access_control']['enabled'])) {
+            if(!$this->getServiceLocator()->has('AccessControl/Acl/Cache')){
+                throw new Exception\CacheNotConfiguredException('TO use acl, you should no configure cache and set it to service manager with key "AccessControl/Acl/Cache"');
+            }
             /**
              * @var \Zend\Cache\Storage\Adapter\Filesystem $cache ;
              */
-            $cache = $sm->get('AccessControl\Acl\Cache');
+            $cache = $sm->get('AccessControl/Acl/Cache');
 
             $rolesCombination = array();
             foreach ($this->getRoles() as $role) {

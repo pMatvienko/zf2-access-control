@@ -87,7 +87,6 @@ trait ControllerTrait
                     $default[$row[0]] = empty($row[1]) ? null : trim($row[1]);
             }
         }
-        $default[ControllerInterface::RESOURCE_TYPE_PARAM] = ControllerInterface::RESOURCE_TYPE_MVC;
 
         return $default;
     }

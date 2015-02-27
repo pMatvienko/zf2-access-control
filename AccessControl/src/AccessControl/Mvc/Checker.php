@@ -1,8 +1,6 @@
 <?php
 namespace AccessControl\Mvc;
 
-use AccessControl\Mvc\Provider\ControllerInterface as AclControllerInterface;
-use Zend\Mvc\Exception\InvalidControllerException;
 use Zend\Mvc\MvcEvent;
 use Zend\Mvc\Router\Http\RouteMatch;
 
@@ -24,21 +22,24 @@ class Checker
      *
      * @param MvcEvent $e
      *
-     * @throws InvalidControllerException
+     * @throws Exception\DisallowedException
+     * @throws Exception\NoRouteMatchException
      */
     public function onDispatch(MvcEvent $e)
     {
+        $routeMatch = $e->getRouteMatch();
+        if(null == $routeMatch){
+            throw new Exception\NoRouteMatchException('Can not get RouteMatch to define currently requested controller and action.');
+        }
         $sm = $e->getApplication()->getServiceManager();
-        if ($e->getTarget() instanceof AclControllerInterface) {
-            $resource = $this->getResourceCode($e->getRouteMatch());
-            $action = $this->getActionCode($e->getRouteMatch());
-            /**
-             * @var \AccessControl\Acl\Acl $acl
-             */
-            $acl = $sm->get('AccessControl\Acl');
-            if ($acl->hasResource($resource) && !$acl->isAllowed(self::COMBINED_ROLE, $resource, $action)) {
-                throw new InvalidControllerException('Action disallowed by access control rules');
-            }
+        $resource = $this->getResourceCode($routeMatch);
+        $action = $this->getActionCode($routeMatch);
+        /**
+         * @var \AccessControl\Acl\Acl $acl
+         */
+        $acl = $sm->get('AccessControl/Acl');
+        if($acl->hasResource($resource) && !$acl->isAllowed(self::COMBINED_ROLE, $resource, $action)){
+            throw new Exception\DisallowedException('Action disallowed by access control rules');
         }
     }
 
@@ -48,10 +49,14 @@ class Checker
      * @param RouteMatch $routeMatch
      *
      * @return string
+     * @throws Exception\NoControllerException
      */
     private function getResourceCode(RouteMatch $routeMatch)
     {
         $routeMatchParams = $routeMatch->getParams();
+        if(empty($routeMatchParams['controller'])){
+            throw new Exception\NoControllerException('Can not get currently requested controller from route match');
+        }
         $controllerNameParts = explode('\\', $routeMatchParams['controller']);
         $module = $this->convertCode(lcfirst($controllerNameParts[0]));
         $controller = $this->convertCode(lcfirst($controllerNameParts[count($controllerNameParts) - 1]));
@@ -69,7 +74,9 @@ class Checker
     private function getActionCode(RouteMatch $routeMatch)
     {
         $routeMatchParams = $routeMatch->getParams();
-
+        if(empty($routeMatchParams['action'])){
+            throw new Exception\NoControllerException('Can not get currently requested action from route match');
+        }
         return $this->convertCode($routeMatchParams['action']);
     }
 

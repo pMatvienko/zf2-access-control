@@ -4,8 +4,6 @@ namespace AccessControl\Model;
 use Zend\ServiceManager\ServiceLocatorAwareInterface;
 use Zend\ServiceManager\ServiceLocatorAwareTrait;
 use AccessControl\Mvc\Provider\ControllerInterface as AclControllerInterface;
-use AccessControl\Entity\AclResource as AclResourceEntity;
-use AccessControl\Entity\AclRole AS AclRoleEntity;
 
 /**
  * Class AclModel
@@ -17,6 +15,7 @@ class AclModel implements ServiceLocatorAwareInterface
 {
     use ServiceLocatorAwareTrait;
 
+    const RESOURCE_TYPE_MVC = 'mvc';
     const RESOURCE_CODE_SPLITTER = ':';
 
     /**
@@ -24,19 +23,19 @@ class AclModel implements ServiceLocatorAwareInterface
      *
      * @param integer $id
      *
-     * @return null|AclRoleEntity
+     * @return null|\AccessControl\Entity\AclRole
      */
     public function findRoleById($id)
     {
-        return $this->getEntityManager()->getRepository('AccessControl\Entity\AclRole')->find($id);
+        return $this->getEntityManager()->getRepository(get_class($this->getServiceLocator()->get('AccessControl/Entity/Role')))->find($id);
     }
 
     /**
      * Removing role entity.
      *
-     * @param AclRoleEntity $entity
+     * @param \AccessControl\Entity\AclRole $entity
      */
-    public function removeRole(AclRoleEntity $entity)
+    public function removeRole($entity)
     {
         return $this->getEntityManager()->remove($entity);
     }
@@ -50,16 +49,16 @@ class AclModel implements ServiceLocatorAwareInterface
      */
     public function syncMvcResources()
     {
-        $scanner = $this->getServiceLocator()->get('AccessControl\Mvc\Scanner');
+        $scanner = $this->getServiceLocator()->get('AccessControl/Mvc/Scanner');
 
         $storedResources = array();
         /**
-         * @var AclResourceEntity $resource
+         * @var \AccessControl\Entity\AclResource $resource
          */
         foreach (
             $this->getEntityManager()
-                ->getRepository('AccessControl\Entity\AclResource')
-                ->findBy(array('type' => AclControllerInterface::RESOURCE_TYPE_MVC)) as $resource) {
+                ->getRepository(get_class($this->getServiceLocator()->get('AccessControl/Entity/Resource')))
+                ->findBy(array('type' => self::RESOURCE_TYPE_MVC)) as $resource) {
             $storedResources[$resource->getModule() . self::RESOURCE_CODE_SPLITTER . $resource->getResource() . self::RESOURCE_CODE_SPLITTER . $resource->getPrivilege()] = $resource;
         }
 
@@ -75,15 +74,15 @@ class AclModel implements ServiceLocatorAwareInterface
                     $resourceCode = $module . self::RESOURCE_CODE_SPLITTER . $mvcResource . self::RESOURCE_CODE_SPLITTER . $privilege;
                     if (array_key_exists($resourceCode, $storedResources)) {
                         $allMvcResources[$resourceCode] = $storedResources[$resourceCode];
-                        $allMvcResources[$resourceCode]->setIsPublic($properties[AclControllerInterface::ANNOTATION_PUBLIC]);
+                        $allMvcResources[$resourceCode]->setIsPublic(!empty($properties[AclControllerInterface::ANNOTATION_PUBLIC]) ? true : false);
                         unset($storedResources[$resourceCode]);
                     } else {
-                        $newResource = new AclResourceEntity();
+                        $newResource = $this->getServiceLocator()->get('AccessControl/Entity/Resource');
                         $newResource->setModule($module);
                         $newResource->setResource($mvcResource);
                         $newResource->setPrivilege($privilege);
-                        $newResource->setType($properties[AclControllerInterface::RESOURCE_TYPE_PARAM]);
-                        $newResource->setIsPublic($properties[AclControllerInterface::ANNOTATION_PUBLIC]);
+                        $newResource->setType(self::RESOURCE_TYPE_MVC);
+                        $newResource->setIsPublic(!empty($properties[AclControllerInterface::ANNOTATION_PUBLIC]) ? true : false);
                         $allMvcResources[$resourceCode] = $newResource;
                     }
                     $this->getEntityManager()->persist($allMvcResources[$resourceCode]);
@@ -107,7 +106,7 @@ class AclModel implements ServiceLocatorAwareInterface
 
         foreach ($resourceParents as $child => $parent) {
             if (!array_key_exists($parent, $allMvcResources)) {
-                throw new ParentAclResourceNotFoundException('Resource "' . $parent . '" not found, but was mentioned for resource "' . $child . '"');
+                throw new Exception\ParentResourceNotFoundException('Resource "' . $parent . '" not found, but was mentioned for resource "' . $child . '"');
             }
             $allMvcResources[$child]->setParent($allMvcResources[$parent]);
             $this->getEntityManager()->persist($allMvcResources[$child]);
@@ -125,11 +124,11 @@ class AclModel implements ServiceLocatorAwareInterface
      */
     public function flushCache($tags = null)
     {
-        if ($this->getServiceLocator()->has('AccessControl\Acl\Cache')) {
+        if ($this->getServiceLocator()->has('AccessControl/Acl/Cache')) {
             /**
              * @var \Zend\Cache\Storage\Adapter\Filesystem $cache ;
              */
-            $cache = $this->getServiceLocator()->get('AccessControl\Acl\Cache');
+            $cache = $this->getServiceLocator()->get('AccessControl/Acl/Cache');
             if (null === $tags) {
                 return $cache->flush();
             } else {

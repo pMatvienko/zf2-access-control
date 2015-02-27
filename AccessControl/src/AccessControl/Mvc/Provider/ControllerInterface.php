@@ -18,9 +18,6 @@ interface ControllerInterface
     const ANNOTATION_PUBLIC = 'public';
     const ANNOTATION_PARENT = 'parent';
 
-    const RESOURCE_TYPE_PARAM = 'resourceType';
-    const RESOURCE_TYPE_MVC = 'mvc';
-
     /**
      * Gets all available actions(privileges) for current controller.
      *

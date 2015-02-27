@@ -14,12 +14,13 @@ trait ModuleTrait
      *
      * @return array
      */
-    public function getControllerList()
+    protected function getControllerList()
     {
         $config = $this->getConfig();
-
         return $config['controllers']['invokables'];
     }
+
+
 
     /**
      * An implementation for ModuleInterface:getModuleAclList.
@@ -33,13 +34,18 @@ trait ModuleTrait
         $moduleResources = array();
         $controllers = $this->getControllerList();
         foreach ($controllers as $controllerAlias => $controllerClass) {
-            $controllerResources = $this->scanControllerAclResources($controllerClass, $module);
-            if ($controllerResources != false) {
-                $moduleResources += $controllerResources;
-            }
+            $moduleResources += $this->scanControllerAclResources($controllerClass, $module);
         }
 
-        return $moduleResources;
+        return $moduleResources+$this->getAccessControlResourcesConfig();
+    }
+
+    protected function getAccessControlResourcesConfig()
+    {
+        if(is_file(__DIR__ . '/config/accessControl.config.php')){
+            return __DIR__ . '/config/accessControl.config.php';
+        }
+        return array();
     }
 
     /**
@@ -55,7 +61,7 @@ trait ModuleTrait
          */
         $controllerReflection = new \ReflectionClass($controllerClass);
         if (!array_key_exists(ModuleInterface::RESOURCE_INTERFACE, $controllerReflection->getInterfaces())) {
-            return false;
+            return array();
         }
         $resourceName = strtolower(
             preg_replace(
@@ -66,7 +72,7 @@ trait ModuleTrait
         );
         $privileges = $controllerClass::getAclActions();
         if (empty($privileges)) {
-            return false;
+            return array();
         }
 
         return array(
