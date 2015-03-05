@@ -35,6 +35,9 @@ class Scanner implements ServiceLocatorAwareInterface
                 if(!empty($moduleResources)) {
                     $resources[strtolower($module)] = $moduleResources;
                 }
+                if(method_exists($moduleInstance, 'getAccessControlResourcesConfig')){
+                    $resources = array_merge_recursive($resources, $moduleInstance->getAccessControlResourcesConfig());
+                }
             }
         }
         return $resources;

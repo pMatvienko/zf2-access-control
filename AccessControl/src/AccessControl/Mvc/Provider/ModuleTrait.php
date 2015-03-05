@@ -37,14 +37,11 @@ trait ModuleTrait
             $moduleResources += $this->scanControllerAclResources($controllerClass, $module);
         }
 
-        return $moduleResources+$this->getAccessControlResourcesConfig();
+        return $moduleResources;
     }
 
-    protected function getAccessControlResourcesConfig()
+    public function getAccessControlResourcesConfig()
     {
-        if(is_file(__DIR__ . '/config/accessControl.config.php')){
-            return __DIR__ . '/config/accessControl.config.php';
-        }
         return array();
     }
 

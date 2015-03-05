@@ -67,7 +67,7 @@ class AclModel implements ServiceLocatorAwareInterface
          * \AccessControl\Entity\AclResource[] $allMvcResources
          */
         $allMvcResources = array();
-
+var_dump($scanner->scan());exit();
         foreach ($scanner->scan() as $module => $mvcResources) {
             foreach ($mvcResources as $mvcResource => $privileges) {
                 foreach ($privileges as $privilege => $properties) {
@@ -92,7 +92,22 @@ class AclModel implements ServiceLocatorAwareInterface
                 }
             }
         }
+
+        /**
+         * @var \AccessControl\Entity\AclResource $unusedResource
+         * @var \AccessControl\Entity\AclResource $child
+         */
         foreach ($storedResources as $unusedResource) {
+            $children = $unusedResource->getChildren();
+            if(count($children) > 0){
+                foreach($children as $child){
+                    $child->setParent(null);
+                    $this->getEntityManager()->persist($child);
+                    $unusedResource->removeChild($child);
+                    $this->getEntityManager()->flush();
+                }
+            }
+
             $this->getEntityManager()->remove($unusedResource);
         }
         $this->getEntityManager()->flush();
