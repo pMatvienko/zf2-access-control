@@ -67,7 +67,6 @@ class AclModel implements ServiceLocatorAwareInterface
          * \AccessControl\Entity\AclResource[] $allMvcResources
          */
         $allMvcResources = array();
-var_dump($scanner->scan());exit();
         foreach ($scanner->scan() as $module => $mvcResources) {
             foreach ($mvcResources as $mvcResource => $privileges) {
                 foreach ($privileges as $privilege => $properties) {
