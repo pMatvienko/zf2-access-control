@@ -29,6 +29,10 @@ return [
                 );
             }
         ],
+        'shared' => array(
+            'AccessControl/Entity/Resource' => false,
+            'AccessControl/Entity/Role' => false
+        ),
         'aliases' => array(
             'acl' => 'AccessControl/Acl',
         ),
