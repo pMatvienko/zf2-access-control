@@ -1,7 +1,7 @@
 <?php
 namespace AccessControl\Mvc\Exception;
 
-use AccessControl\Mvc\Exception;
+use AccessControl\Exception;
 
 /**
  * Class DisallowedException
