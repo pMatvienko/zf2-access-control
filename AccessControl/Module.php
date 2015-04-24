@@ -13,6 +13,7 @@ use Zend\ModuleManager\Feature\BootstrapListenerInterface;
 use Zend\ModuleManager\Feature\AutoloaderProviderInterface;
 use Zend\Mvc\MvcEvent;
 use Zend\EventManager\EventInterface;
+use Zend\Console\Console;
 
 class Module implements BootstrapListenerInterface, AutoloaderProviderInterface
 {
@@ -42,7 +43,7 @@ class Module implements BootstrapListenerInterface, AutoloaderProviderInterface
     {
         $app = $e->getApplication();
         $config = $app->getServiceManager()->get('config');
-        if (!empty($config['access_control']['enabled'])) {
+        if (!empty($config['access_control']['enabled']) && !Console::isConsole()) {
             $checker = new \AccessControl\Mvc\Checker();
             $app->getEventManager()->getSharedManager()->attach('Zend\Mvc\Controller\AbstractActionController', MvcEvent::EVENT_DISPATCH, array($checker, 'onDispatch'), 100);
         }
