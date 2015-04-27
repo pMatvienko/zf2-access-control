@@ -2,7 +2,7 @@
 namespace AccessControl\Mvc;
 
 use Zend\Mvc\MvcEvent;
-use Zend\Mvc\Router\Http\RouteMatch;
+use Zend\Mvc\Router\RouteMatch;
 
 /**
  * Class Checker. This class checking access on DISPATCH EVENT.

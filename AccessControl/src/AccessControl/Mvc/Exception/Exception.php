@@ -7,7 +7,7 @@ namespace AccessControl\Mvc\Exception;
  * @package AccessControl\Mvc\Exception
  * @author  Pavel Matviienko
  */
-class Exception extends \Exception
+class Exception extends \AccessControl\Exception
 {
 
 }
